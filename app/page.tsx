@@ -159,7 +159,7 @@ export default function HomePage() {
 
         {/* 2번 수정: 클릭 기능이 제거된 순수 현황 그리드 */}
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-50">
-          <h3 className="font-black text-gray-900 text-lg mb-6 px-1 underline decoration-blue-100 decoration-8 underline-offset-[-2px]">나의 무지개 길</h3>
+          <h3 className="font-black text-gray-900 text-lg mb-6 px-1 underline decoration-blue-100 decoration-8 underline-offset-[-2px]">나의 말씀 현황</h3>
           <div className="grid grid-cols-10 gap-1.5 p-1">
             {allSchedules.map((day, index) => {
               const isRead = readHistory.includes(day.date)

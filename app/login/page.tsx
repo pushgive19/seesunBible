@@ -30,14 +30,17 @@ export default function LoginPage() {
     const fakeEmail = `user${safeName}${phone}@gmail.com`
     const password = `${name}${phone}`
 
+    // 해결 포인트 1: 타입을 any로 지정하여 TypeScript의 엄격한 검사를 통과시킵니다.
+    let authData: any = null
+
     // 1. 로그인 시도
-    let { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: fakeEmail,
       password: password,
     })
 
-    // 2. 로그인 실패 시(계정이 없으면) 회원가입 진행
     if (signInError) {
+      // 2. 로그인 실패 시(계정이 없으면) 회원가입 진행
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: fakeEmail,
         password: password,
@@ -48,20 +51,25 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
+      // 해결 포인트 2: 회원가입 성공 시 데이터를 할당합니다.
       authData = signUpData
+    } else {
+      // 로그인 성공 시 데이터를 할당합니다.
+      authData = signInData
     }
 
-   // 이 부분이 실행되어야 하는데, authData.user.id가 
-// profiles 테이블의 id 컬럼으로 정확히 전달되어야 합니다.
-if (authData?.user) {
-  const { error } = await supabase.from('profiles').upsert({
-    id: authData.user.id,     // 여기서의 id는 Auth의 UID입니다.
-    display_name: name        // 성함
-  })
-  if (error) console.error("프로필 저장 에러:", error.message)
-}
+    // 3. 프로필 정보 업데이트 (upsert)
+    if (authData?.user) {
+      const { error } = await supabase.from('profiles').upsert({
+        id: authData.user.id,     // Auth의 UID
+        display_name: name        // 성함
+      })
+      if (error) console.error("프로필 저장 에러:", error.message)
+    }
 
+    setLoading(false)
     router.push('/')
+    router.refresh()
   }
 
   return (

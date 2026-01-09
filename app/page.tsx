@@ -27,7 +27,16 @@ export default function HomePage() {
   const [celebrationDay, setCelebrationDay] = useState(0)
 
   const totalDays = 181
-  const todayStr = new Date().toISOString().split('T')[0]
+
+  // 수정 포인트 1: 한국 시간(KST) 자정 기준으로 오늘 날짜 구하기
+  const getKSTDate = () => {
+    const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000; // 9시간 밀리초
+    const kstDate = new Date(now.getTime() + kstOffset);
+    return kstDate.toISOString().split('T')[0];
+  }
+  
+  const todayStr = getKSTDate();
 
   const getRainbowColor = (index: number) => {
     const hue = (index / totalDays) * 280
@@ -132,7 +141,6 @@ export default function HomePage() {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-white pb-20 font-sans">
-      {/* 1번 수정: 음표 제거된 헤더 */}
       <div className="p-6 flex justify-between items-center bg-white sticky top-0 z-50 border-b border-gray-50 shadow-sm">
         <h1 className="text-xl font-black text-gray-900 tracking-tight italic">시선통독 181 🌈</h1>
         <div className="bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
@@ -142,8 +150,18 @@ export default function HomePage() {
 
       <div className="p-6 space-y-12">
         {/* 오늘의 말씀 카드 */}
-        <div className="flex items-center gap-4">
-          <button onClick={openPastModal} className="p-3 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm"><ChevronLeft size={24}/></button>
+        <div className="flex flex-col gap-4">
+          {/* 수정 포인트 2: 이전 말씀 버튼 텍스트 추가 및 위치 조정 */}
+          <div className="flex justify-start">
+            <button 
+              onClick={openPastModal} 
+              className="flex items-center gap-1 px-4 py-2 bg-gray-50 rounded-xl border border-gray-100 shadow-sm text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <ChevronLeft size={18} strokeWidth={3}/>
+              <span className="text-sm font-bold">이전 말씀</span>
+            </button>
+          </div>
+
           <div className="flex-1 bg-slate-900 text-white p-7 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
             <div className="relative z-10 text-center">
               <span className="text-[10px] font-black text-slate-500 tracking-[0.2em] block mb-2 uppercase italic">{todayStr}</span>
@@ -157,7 +175,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 2번 수정: 클릭 기능이 제거된 순수 현황 그리드 */}
+        {/* 나의 말씀 현황 그리드 */}
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-50">
           <h3 className="font-black text-gray-900 text-lg mb-6 px-1 underline decoration-blue-100 decoration-8 underline-offset-[-2px]">나의 말씀 현황</h3>
           <div className="grid grid-cols-10 gap-1.5 p-1">
@@ -193,7 +211,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 모달 및 팝업 (기존과 동일) */}
+      {/* 모달 및 팝업 */}
       {modalType === 'past' && (
         <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center">
           <div className="bg-white w-full max-w-sm rounded-t-[3rem] h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300">

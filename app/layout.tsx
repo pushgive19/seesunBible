@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "시선교회 성경통독 181 🌈",
-    description: "말씀으로 하나되는 시선 공동체",
+    description: "너 말씀 얼마나 읽었어?",
     images: [
       {
         url: "/thumbnail.png", // public 폴더에 넣을 썸네일 이미지 이름

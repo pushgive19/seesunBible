@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "시선교회 성경통독 181 🌈",
   description: "181일 동안 함께하는 시선 공동체 성경 통독 캠페인",
   icons: {
-    icon: "/favicon.ico", // public 폴더에 넣은 아이콘 파일 이름
+    icon: "/icon.png", // public 폴더에 넣은 아이콘 파일 이름
   },
   openGraph: {
     title: "시선교회 성경통독 181 🌈",

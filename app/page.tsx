@@ -124,15 +124,55 @@ export default function HomePage() {
     setModalList(filtered); setTempSelected(filtered.filter(s => readHistory.includes(s.date)).map(s => s.date)); setModalType('past');
   }
 
-  const saveBulkRead = async () => {
+
+
+const saveBulkRead = async () => {
     if (!user) return
+    
+    // 현재 체크하기 전의 완료 일수
+    const beforeCount = readHistory.length
+    
     const currentModalDates = modalList.map(m => m.date)
     const toDelete = currentModalDates.filter(date => readHistory.includes(date) && !tempSelected.includes(date))
     const toInsert = tempSelected.filter(date => !readHistory.includes(date)).map(date => ({ user_id: user.id, date }))
+    
     if (toDelete.length > 0) await supabase.from('progress').delete().eq('user_id', user.id).in('date', toDelete)
     if (toInsert.length > 0) await supabase.from('progress').insert(toInsert)
-    await fetchData(user); setModalType(null);
+    
+    // 데이터 새로고침 (fetchData 내부에서 setReadHistory가 일어납니다)
+    await fetchData(user)
+    
+    // --- 축하 로직 추가 ---
+    // 새로 체크된 후의 전체 완료 일수 (readHistory가 fetchData 이후 업데이트됨을 보장하기 위해 직접 계산)
+    const newHistoryCount = allSchedules.filter(s => 
+      (readHistory.includes(s.date) && !toDelete.includes(s.date)) || 
+      tempSelected.includes(s.date)
+    ).length
+
+    // 만약 늘어났다면?
+    if (newHistoryCount > beforeCount) {
+      // 10일 단위로 끊어서 (10, 20, 30...) 어느 선을 넘었는지 확인
+      // 예: 9일 -> 11일이 되면 10일 축하 / 19일 -> 25일이 되면 20일 축하
+      const beforeMilestone = Math.floor(beforeCount / 10)
+      const afterMilestone = Math.floor(newHistoryCount / 10)
+      
+      if (afterMilestone > beforeMilestone || newHistoryCount === 181) {
+        let milestoneToCelebrate = afterMilestone * 10
+        // 181일 완독 우선 순위
+        if (newHistoryCount === 181) milestoneToCelebrate = 181
+        
+        if (milestoneToCelebrate > 0) {
+          setCelebrationDay(milestoneToCelebrate)
+          setShowCelebration(true)
+          // 폭죽 효과 (인덱스는 대략 현재 날짜 근처로 설정)
+          fireSmartConfetti(Math.min(newHistoryCount, 180), milestoneToCelebrate)
+        }
+      }
+    }
+    
+    setModalType(null)
   }
+
 
   if (loading) return <div className="flex items-center justify-center min-h-screen font-black text-blue-600">준비 중...</div>
 

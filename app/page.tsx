@@ -28,15 +28,27 @@ export default function HomePage() {
 
   const totalDays = 181
 
-  // 수정 포인트 1: 한국 시간(KST) 자정 기준으로 오늘 날짜 구하기
   const getKSTDate = () => {
     const now = new Date();
-    const kstOffset = 9 * 60 * 60 * 1000; // 9시간 밀리초
+    const kstOffset = 9 * 60 * 60 * 1000;
     const kstDate = new Date(now.getTime() + kstOffset);
     return kstDate.toISOString().split('T')[0];
   }
   
   const todayStr = getKSTDate();
+
+  // 오늘이 통독 몇 일차인지 계산하는 함수
+  const getDayCount = () => {
+    if (allSchedules.length === 0) return 0;
+    // DB의 첫 번째 스케줄 날짜를 시작일로 기준 잡습니다.
+    const startDate = new Date(allSchedules[0].date);
+    const today = new Date(todayStr);
+    const diffTime = today.getTime() - startDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays > 0 ? diffDays : 0;
+  }
+
+  const currentDayNum = getDayCount();
 
   const getRainbowColor = (index: number) => {
     const hue = (index / totalDays) * 280
@@ -124,14 +136,9 @@ export default function HomePage() {
     setModalList(filtered); setTempSelected(filtered.filter(s => readHistory.includes(s.date)).map(s => s.date)); setModalType('past');
   }
 
-
-
-const saveBulkRead = async () => {
+  const saveBulkRead = async () => {
     if (!user) return
-    
-    // 현재 체크하기 전의 완료 일수
     const beforeCount = readHistory.length
-    
     const currentModalDates = modalList.map(m => m.date)
     const toDelete = currentModalDates.filter(date => readHistory.includes(date) && !tempSelected.includes(date))
     const toInsert = tempSelected.filter(date => !readHistory.includes(date)).map(date => ({ user_id: user.id, date }))
@@ -139,40 +146,29 @@ const saveBulkRead = async () => {
     if (toDelete.length > 0) await supabase.from('progress').delete().eq('user_id', user.id).in('date', toDelete)
     if (toInsert.length > 0) await supabase.from('progress').insert(toInsert)
     
-    // 데이터 새로고침 (fetchData 내부에서 setReadHistory가 일어납니다)
     await fetchData(user)
     
-    // --- 축하 로직 추가 ---
-    // 새로 체크된 후의 전체 완료 일수 (readHistory가 fetchData 이후 업데이트됨을 보장하기 위해 직접 계산)
     const newHistoryCount = allSchedules.filter(s => 
       (readHistory.includes(s.date) && !toDelete.includes(s.date)) || 
       tempSelected.includes(s.date)
     ).length
 
-    // 만약 늘어났다면?
     if (newHistoryCount > beforeCount) {
-      // 10일 단위로 끊어서 (10, 20, 30...) 어느 선을 넘었는지 확인
-      // 예: 9일 -> 11일이 되면 10일 축하 / 19일 -> 25일이 되면 20일 축하
       const beforeMilestone = Math.floor(beforeCount / 10)
       const afterMilestone = Math.floor(newHistoryCount / 10)
       
       if (afterMilestone > beforeMilestone || newHistoryCount === 181) {
         let milestoneToCelebrate = afterMilestone * 10
-        // 181일 완독 우선 순위
         if (newHistoryCount === 181) milestoneToCelebrate = 181
-        
         if (milestoneToCelebrate > 0) {
           setCelebrationDay(milestoneToCelebrate)
           setShowCelebration(true)
-          // 폭죽 효과 (인덱스는 대략 현재 날짜 근처로 설정)
           fireSmartConfetti(Math.min(newHistoryCount, 180), milestoneToCelebrate)
         }
       }
     }
-    
     setModalType(null)
   }
-
 
   if (loading) return <div className="flex items-center justify-center min-h-screen font-black text-blue-600">준비 중...</div>
 
@@ -181,17 +177,23 @@ const saveBulkRead = async () => {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-white pb-20 font-sans">
+      {/* 상단 헤더: 통독 일차 표시 추가 */}
       <div className="p-6 flex justify-between items-center bg-white sticky top-0 z-50 border-b border-gray-50 shadow-sm">
-        <h1 className="text-xl font-black text-gray-900 tracking-tight italic">시선통독 181 🌈</h1>
+        <div className="flex flex-col">
+          <h1 className="text-xl font-black text-gray-900 tracking-tight italic">시선통독 181 🌈</h1>
+          {currentDayNum > 0 && (
+            <span className="text-[10px] font-bold text-blue-500 mt-0.5">
+              오늘은 통독 <span className="underline decoration-blue-200 decoration-2">{currentDayNum}일차</span>입니다
+            </span>
+          )}
+        </div>
         <div className="bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
            <span className="text-xs font-black text-blue-600">{userName} <span className="font-medium opacity-60">성도님</span></span>
         </div>
       </div>
 
       <div className="p-6 space-y-12">
-        {/* 오늘의 말씀 카드 */}
         <div className="flex flex-col gap-4">
-          {/* 수정 포인트 2: 이전 말씀 버튼 텍스트 추가 및 위치 조정 */}
           <div className="flex justify-start">
             <button 
               onClick={openPastModal} 
@@ -215,7 +217,6 @@ const saveBulkRead = async () => {
           </div>
         </div>
 
-        {/* 나의 말씀 현황 그리드 */}
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-50">
           <h3 className="font-black text-gray-900 text-lg mb-6 px-1 underline decoration-blue-100 decoration-8 underline-offset-[-2px]">나의 말씀 현황</h3>
           <div className="grid grid-cols-10 gap-1.5 p-1">
@@ -233,7 +234,6 @@ const saveBulkRead = async () => {
           </div>
         </div>
 
-        {/* 시선 친구들 엿보기 */}
         <div className="pt-4">
           <div className="flex items-center gap-2 mb-8 px-1"><Users className="text-blue-500" size={24}/><h3 className="font-black text-gray-900 text-xl">시선 친구들 엿보기</h3></div>
           <div className="space-y-8">
@@ -251,7 +251,6 @@ const saveBulkRead = async () => {
         </div>
       </div>
 
-      {/* 모달 및 팝업 */}
       {modalType === 'past' && (
         <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center">
           <div className="bg-white w-full max-w-sm rounded-t-[3rem] h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300">

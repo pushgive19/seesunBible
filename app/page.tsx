@@ -37,10 +37,8 @@ export default function HomePage() {
   
   const todayStr = getKSTDate();
 
-  // 오늘이 통독 몇 일차인지 계산하는 함수
   const getDayCount = () => {
     if (allSchedules.length === 0) return 0;
-    // DB의 첫 번째 스케줄 날짜를 시작일로 기준 잡습니다.
     const startDate = new Date(allSchedules[0].date);
     const today = new Date(todayStr);
     const diffTime = today.getTime() - startDate.getTime();
@@ -177,7 +175,6 @@ export default function HomePage() {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-white pb-20 font-sans">
-      {/* 상단 헤더: 통독 일차 표시 추가 */}
       <div className="p-6 flex justify-between items-center bg-white sticky top-0 z-50 border-b border-gray-50 shadow-sm">
         <div className="flex flex-col">
           <h1 className="text-xl font-black text-gray-900 tracking-tight italic">시선통독 181 🌈</h1>
@@ -218,14 +215,20 @@ export default function HomePage() {
         </div>
 
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-50">
-          <h3 className="font-black text-gray-900 text-lg mb-6 px-1 underline decoration-blue-100 decoration-8 underline-offset-[-2px]">나의 말씀 현황</h3>
+          <div className="flex items-baseline justify-between mb-6 px-1">
+            <h3 className="font-black text-gray-900 text-lg underline decoration-blue-100 decoration-8 underline-offset-[-2px]">나의 말씀 현황</h3>
+            <span className="text-sm font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+              {readHistory.length} / {currentDayNum}
+            </span>
+          </div>
           <div className="grid grid-cols-10 gap-1.5 p-1">
             {allSchedules.map((day, index) => {
               const isRead = readHistory.includes(day.date)
+              const isFuture = day.date > todayStr
               return (
                 <div key={day.date} 
-                  style={{ backgroundColor: isRead ? getRainbowColor(index) : '#F1F5F9' }}
-                  className={`aspect-square rounded flex items-center justify-center text-[8px] transition-all ${isRead ? 'text-white font-bold scale-105 shadow-sm' : 'text-gray-300'}`}
+                  style={{ backgroundColor: isRead ? getRainbowColor(index) : (isFuture ? '#E2E8F0' : '#F1F5F9') }}
+                  className={`aspect-square rounded flex items-center justify-center text-[8px] transition-all ${isRead ? 'text-white font-bold scale-105 shadow-sm' : isFuture ? 'text-slate-400' : 'text-gray-300'}`}
                 >
                   {isRead ? <Check size={10} strokeWidth={4}/> : index + 1}
                 </div>
@@ -266,7 +269,7 @@ export default function HomePage() {
             <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-gray-50">
               {modalList.map((item) => (
                 <div key={item.date} onClick={() => setTempSelected(prev => prev.includes(item.date) ? prev.filter(d => d !== item.date) : [...prev, item.date])} className={`flex items-center p-5 rounded-[1.8rem] border-2 bg-white transition-all ${tempSelected.includes(item.date) ? 'border-blue-500 shadow-md' : 'border-transparent'}`}>
-                  <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center ${tempSelected.includes(item.date) ? 'bg-blue-500 border-blue-500' : 'border-gray-200'}`}>{tempSelected.includes(item.date) && <Check size={14} className="text-white" strokeWidth={4} />}</div>
+                  <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center ${tempSelected.includes(item.date) ? 'bg-blue-500 border-blue-500' : 'border-gray-400'}`}>{tempSelected.includes(item.date) && <Check size={14} className="text-white" strokeWidth={4} />}</div>
                   <div><p className="text-[10px] font-bold text-gray-400 mb-0.5">{item.date}</p><p className="font-black text-gray-900 text-lg leading-tight">{item.bible_range}</p></div>
                 </div>
               ))}
